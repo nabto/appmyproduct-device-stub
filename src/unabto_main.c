@@ -9,6 +9,7 @@
 
 void nabto_yield(int msec);
 static void help(const char* errmsg, const char *progname);
+void demo_application_tick();
 
 int main(int argc, char* argv[])
 {
@@ -38,6 +39,7 @@ int main(int argc, char* argv[])
     while (true) {
         unabto_tick();
         nabto_yield(10);
+        demo_application_tick();
     }
 
     unabto_close();
