@@ -39,11 +39,12 @@
 ## getPublicInfo.json
 
 request which tells what state current client is in 
-
-  {
-     ...  oldGetPublicInfo
-    "paired": 0|1
-  }
+```
+{
+   ...  oldGetPublicInfo
+  "paired": 0|1
+}
+```
 
 
 # user model on the device
@@ -61,7 +62,7 @@ The device has a list of users identified by the fignerprint. If a user is paire
  
 # pairing mode
 
-The app has a button which owners can toggle to enable/disable pairing mode.
+The app has a button which owners can toggle to enable/disable pairing mode. Only owners can toggle pairing mode.
  
 ## setPairingMode.json
   {
