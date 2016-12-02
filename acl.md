@@ -1,17 +1,42 @@
 # Heat pump acl functionality
 
+## operating modes
+
 # unpaired fresh mode
 
 1. Client connects locally. Connection access is granted since device is unpaired.
-2. Client calls getAclInfo.json
+2. Client calls getPublicInfo.json to find out if you are paired with the device.
+3. Client goes into pairing mode and calls pairWithDevice.json
+4. Client is granted owner permissions to the device
 
 
-# paired device local access
+# paired device local pairing access
 
 1. Client connects locally. Connection access is granted since the connection is local.
+2. Client calls getPublicInfo.json to find out that it is not paired.
+3. Client goes into pairing mode and calls pairWithDevice.json
+4. Client is granted guest permissions since the device already have an owner.
+
+# access device you are paired with
+
+1. Client connects to the device.
+2. Client calls getPublicInfo.json to ensure that the client is paired with the device.
+3. ...
+4. PROFIT
+
+# Remote Access to a device where you have been removed from the ACL
+1. The device is in the list of known devices
+2. Client connects to the device. The connection is not granted and fails with ACCESS_DENIED
+3. The user is informed about the situation and asked to re-pair with the device.
+
+# Local Access to a device where you have been removed from the ACL
+1. the device is in the list of known devices
+2. Client connects to the device, the connection is granted because the device is in local pairing mode.
+3. Client calls getPublicInfo.json and discovers that it is not seen as paired.
+4. Client goes into pairing mode and calls pairWithDevice.json
 
 
-## me.json / getPublicInfo.json
+## getPublicInfo.json
 
 request which tells what state current client is in 
 
@@ -79,14 +104,26 @@ response:
   "status": ACL_OK | ACL_FAILED
 }
 
-## addMe.json
+## pairWithDevice.json
 
+if this is the first one to pair with the device this person will be granted owner access. If the device already have paired users, this person will be granted guest access.
+
+request:
 {
   "userName": ...
-  
+}
+
+response:
+{
+  "userName": string,
+  "fingerprint": uint8_t[16]
+  "permisssions": uint32_t
 }
 
 ## getMe.json
+
+return a description of the user you are logged in as.
+
 {
   "userName": string
   "fingerprint": uint8_t[16]
@@ -95,6 +132,8 @@ response:
 }
 
 ## getUser.json
+
+get a user identified by the fingerprint
 
 request:
 fingerprint: uint8_t[16]
@@ -106,8 +145,9 @@ response:
   "permissions": uint32_t
 }
 
-
 ## addPermissions.json
+
+add permission bits to the permissions for a given user
 
 request:
 fingerprint: uint8_t[16]
@@ -120,6 +160,8 @@ response:
 
 ## removePermissions.json
 
+remove permission bits from a given user.
+
 request:
 fingerprint: uint8_t[16]
 permissions: uint32_t
@@ -130,11 +172,16 @@ response:
 }
 
 ## setUserName.json
+
+Set the username of a user and return the username as it was saved on the device (it could have been truncated)
+
+Owners can change names of all users, guests can only change names of themselves.
+
 request:
 fingerprint: uint8_t[16]
 userName: string
 
 response:
 {
-  userName: string, //the userName as it was saved on the device
+  userName: string
 }
