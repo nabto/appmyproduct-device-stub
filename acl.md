@@ -40,23 +40,23 @@
 
 request which tells what state current client is in 
 
-{
-   ...  oldGetPublicInfo
-  "paired": 0|1
-}
+  {
+     ...  oldGetPublicInfo
+    "paired": 0|1
+  }
 
 
 # user model on the device
 
 The device has a list of users identified by the fignerprint. If a user is paired his fingerprint is in the list of known users.
 
-[user]
+  users: [user]
  
- struct user {
-   uint8_t fingerprint[16]
-   char userName[64]
-   uint32_t permissions
- }
+  struct user {
+    uint8_t fingerprint[16]
+    char userName[64]
+    uint32_t permissions
+  }
  
  
 # pairing mode
@@ -64,15 +64,15 @@ The device has a list of users identified by the fignerprint. If a user is paire
 The app has a button which owners can toggle to enable/disable pairing mode.
  
 ## setPairingMode.json
-{
-	"localPairing": 1
-}
+  {
+    "localPairing": 1
+  }
 
 ## getPairingMode.json
-{
-  "localPairing": 0
-  "remotePairing": 0
-}
+  {
+    "localPairing": 0
+    "remotePairing": 0
+  }
 
 # users
 
@@ -80,108 +80,117 @@ A user is identified by his fingerprint.
 
 ## getUsers.json
 
-request:
-maxUsersPerRequest: uint8_t 
-optional startFingerprint: uint8_t[16] // used in pagination mode
+All users can get all users.
 
-{
-  "users": [
-    { "userName": string
-	  "fingerprint": uint8_t[16]
-	  "permissions": uint32_t
-    }
-  ]
-  "next": uint8_t[16] // fingerprint to use as startFingerprint if more pages are available
-}
+  request:
+  maxUsersPerRequest: uint8_t 
+  optional startFingerprint: uint8_t[16] // used in pagination mode
+
+  {
+    "users": [
+      { "userName": string
+	    "fingerprint": uint8_t[16]
+	    "permissions": uint32_t
+      }
+    ]
+    "next": uint8_t[16] // fingerprint to use as startFingerprint if more pages are available
+  }
 
 ## removeUser.json
 
-request:
-userid: fingerprint
+Owners can remove all other users including themselves.
+Guests can only remove themselves.
 
-response:
-{
-  "status": ACL_OK | ACL_FAILED
-}
+  request:
+  userid: fingerprint
+
+  response:
+  {
+    "status": ACL_OK | ACL_FAILED
+  }
 
 ## pairWithDevice.json
 
 if this is the first one to pair with the device this person will be granted owner access. If the device already have paired users, this person will be granted guest access.
 
-request:
-{
-  "userName": ...
-}
+  request:
+  {
+    "userName": ...
+  }
 
-response:
-{
-  "userName": string,
-  "fingerprint": uint8_t[16]
-  "permisssions": uint32_t
-}
-
+  response:
+  {
+    "userName": string,
+    "fingerprint": uint8_t[16]
+    "permisssions": uint32_t
+  }
+  
 ## getMe.json
 
 return a description of the user you are logged in as.
 
-{
-  "userName": string
-  "fingerprint": uint8_t[16]
-  "permissions": uint32_t
-  "paired": uint8_t (0|1)
-}
-
+  {
+    "userName": string
+    "fingerprint": uint8_t[16]
+    "permissions": uint32_t
+    "paired": uint8_t (0|1)
+  }
+  
 ## getUser.json
+
+All users can get all the other users permissions.
 
 get a user identified by the fingerprint
 
-request:
-fingerprint: uint8_t[16]
-
-response:
-{
-  "userName": string
-  "fingerprint": uint8_t[16]
-  "permissions": uint32_t
-}
-
+  request:
+  fingerprint: uint8_t[16]
+  
+  response:
+  {
+    "userName": string
+    "fingerprint": uint8_t[16]
+    "permissions": uint32_t
+  }
+  
 ## addPermissions.json
+
+Owners can change permissions of all other users including themselves
 
 add permission bits to the permissions for a given user
 
-request:
-fingerprint: uint8_t[16]
-permissions: uint32_t;
-
-response:
-{
-    "permissions": uint32_t new aggregated permissions bits
-}
-
+  request:
+  fingerprint: uint8_t[16]
+  permissions: uint32_t;
+  
+  response:
+  {
+      "permissions": uint32_t new aggregated permissions bits
+  }
+  
 ## removePermissions.json
 
 remove permission bits from a given user.
 
-request:
-fingerprint: uint8_t[16]
-permissions: uint32_t
-
-response:
-{
-  "permissions": uint32_t new aggregated permissions bits.
-}
-
+  request:
+  fingerprint: uint8_t[16]
+  permissions: uint32_t
+  
+  response:
+  {
+    "permissions": uint32_t new aggregated permissions bits.
+  }
+  
 ## setUserName.json
 
 Set the username of a user and return the username as it was saved on the device (it could have been truncated)
 
 Owners can change names of all users, guests can only change names of themselves.
 
-request:
-fingerprint: uint8_t[16]
-userName: string
-
-response:
-{
+  request:
+  fingerprint: uint8_t[16]
   userName: string
-}
+  
+  response:
+  {
+    userName: string
+  }
