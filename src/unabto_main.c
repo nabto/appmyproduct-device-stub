@@ -9,6 +9,7 @@
 #include "unabto/unabto_common_main.h"
 #include "unabto/unabto_logging.h"
 #include "demo_application.h"
+#include "LEDBlink.c"
 
 struct configuration {
     const char *device_id;
@@ -79,6 +80,12 @@ int main(int argc, char* argv[])
 
     NABTO_LOG_INFO(("AppMyProduct demo stub [%s] running!", nms->id));
 
+    LEDBlink_Setup(0);
+    LEDBlink_SetRanges(50,2000,16,30);
+    LEDBlink_SetTemperature(16);
+    
+    LEDBlink_StartBlinking();
+    
     while (true) {
         unabto_tick();
         nabto_yield(10);

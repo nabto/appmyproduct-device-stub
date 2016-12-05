@@ -4,6 +4,7 @@
 
 #include "unabto/unabto_app.h"
 #include <stdio.h>
+#include "LEDBlink.c"
 
 typedef enum { HPM_COOL = 0,
                HPM_HEAT = 1,
@@ -90,6 +91,8 @@ application_event_result application_event(application_request* request,
         // heatpump_set_target_temperature.json
         if (!buffer_read_uint32(read_buffer, (uint32_t*)(&heatpump_target_temperature_))) return AER_REQ_TOO_SMALL;
         if (!buffer_write_uint32(write_buffer, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
+	int Temperature = (int)heatpump_target_temperature_;
+	LEDBlink_SetTemperature(Temperature);
         return AER_REQ_RESPONSE_READY;
 
     case 20030:
