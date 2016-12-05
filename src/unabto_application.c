@@ -11,7 +11,7 @@ typedef enum { HPM_COOL = 0,
                HPM_CIRCULATE = 2,
                HPM_DEHUMIDIFY = 3} heatpump_mode_t;
 
-static uint8_t heatpump_state_ = 0;
+static uint8_t heatpump_state_ = 1;
 static int32_t heatpump_room_temperature_ = 19;
 static int32_t heatpump_target_temperature_ = 23;
 static uint32_t heatpump_mode_ = HPM_HEAT;
@@ -54,6 +54,27 @@ int write_string(buffer_write_t* write_buffer, const char* string) {
     return unabto_query_write_uint8_list(write_buffer, (uint8_t *)string, strlen(string));
 }
 
+int write_acl(buffer_write_t* write_buffer) {
+    unabto_list_ctx list;
+    unabto_query_write_list_start(write_buffer, &list);
+
+    if (!write_string(write_buffer, "Ulrik's iPhone SE")) return 0;
+    if (!write_string(write_buffer, "2c:4d:e2:d0:2c:42:d0:2c:4d:cc:32:00:12:a5:dd:af")) return 0;
+    if (!unabto_query_write_uint32(write_buffer, 1)) return 0;
+
+    if (!write_string(write_buffer, "Sofus' iPhone 5")) return 0;
+    if (!write_string(write_buffer, "42:d0:2c:4d:cc:32:00:12:a5:dd:af:d0:2c:4d:42:d0")) return 0;
+    if (!unabto_query_write_uint32(write_buffer, 0)) return 0;
+
+    if (!write_string(write_buffer, "Ulriks' iPad")) return 0;
+    if (!write_string(write_buffer, "87:e3:4c:57:f4:68:6c:bb:a5:dd:af:d0:2c:4d:42:d0")) return 0;
+    if (!unabto_query_write_uint32(write_buffer, 0)) return 0;
+
+    if (!unabto_query_write_list_end(write_buffer, &list, 3)) return 0;
+
+    return 1;
+}
+
 application_event_result application_event(application_request* request,
                                            buffer_read_t* read_buffer,
                                            buffer_write_t* write_buffer) {
@@ -71,7 +92,19 @@ application_event_result application_event(application_request* request,
         if (!write_string(write_buffer, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(write_buffer, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
-        
+
+    case 10010:
+        // set_device_info.json
+        if (!write_string(write_buffer, device_name_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(write_buffer, device_product_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(write_buffer, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
+        return AER_REQ_RESPONSE_READY;
+
+    case 11000:
+        // get_users.json
+        if (!write_acl(write_buffer)) return AER_REQ_RSP_TOO_LARGE;
+        return AER_REQ_RESPONSE_READY;
+
     case 20000: 
         // heatpump_get_full_state.json
         if (!buffer_write_uint8(write_buffer, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
@@ -106,17 +139,3 @@ application_event_result application_event(application_request* request,
         return AER_REQ_INV_QUERY_ID;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
