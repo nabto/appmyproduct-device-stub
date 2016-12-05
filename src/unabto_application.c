@@ -15,7 +15,7 @@ static int32_t heatpump_room_temperature_ = 19;
 static int32_t heatpump_target_temperature_ = 23;
 static uint32_t heatpump_mode_ = HPM_HEAT;
 
-static const char* device_name_ = "Apollovej Stuen 4";
+static const char* device_name_ = "Living room";
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "img/chip-small.png";
 
