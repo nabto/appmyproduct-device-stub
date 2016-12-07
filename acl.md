@@ -2,9 +2,17 @@
 
 ## operating modes
 
+The device can either be open for local pairing or closed for local
+pairing, if it's open for local pairing then it's possible to pair
+with the device if it is closed for local pairing it is not possible
+to pair with the device. When a user pairs with the device the
+permission granted is controlled by the admin of the device.
+
+
+
 # unpaired fresh mode
 
-1. Client connects locally. Connection access is granted since device is unpaired. [AFKLAR - device default in open access state]
+1. Client connects locally. Connection access is granted since device is unpaired. 
 2. Client calls getPublicInfo.json to find out if you are paired with the device. [TODO - opdater discover side]
 3. Client goes into pairing mode and calls pairWithDevice.json [TODO - opdater pairing side]
 4. Client is granted owner permissions to the device [TODO - opdater device stub]
@@ -12,10 +20,10 @@
 
 # paired device local pairing access
 
-1. Client connects locally. Connection access is granted since the connection is local. [AFKLAR - device default in open access state]
+1. Client connects locally. Connection access is granted since the connection is local. 
 2. Client calls getPublicInfo.json to find out that it is not paired.
 3. Client goes into pairing mode and calls pairWithDevice.json
-4. Client is granted guest permissions since the device already have an owner. [AFKLAR - kun hvis device er i "auto-grant-guest access mode"]
+4. Client is granted guest permissions since the device already have an owner.
 
 # access device you are paired with
 
@@ -31,7 +39,7 @@
 
 # Local Access to a device where you have been removed from the ACL
 1. the device is in the list of known devices
-2. Client connects to the device, the connection is granted because the device is in local pairing mode. [AFKLAR - afhænger af open access mode]
+2. Client connects to the device, the connection is granted because the device is in local pairing mode.
 3. Client calls getPublicInfo.json and discovers that it is not seen as paired.
 4. Client goes into pairing mode and calls pairWithDevice.json
 
@@ -42,10 +50,10 @@ request which tells what state current client is in
 ```
 {
    ...  oldGetPublicInfo
-  "paired": 0|1
+  "paired": (UNPAIRED = 0 | PAIRED = 1)
+  "pairingMode": (CLOSED_FOR_PAIRING = 0 | OPEN_FOR_PAIRING = 1 )
 }
 ```
-
 
 # user model on the device
 
@@ -62,26 +70,52 @@ struct user {
   uint32_t permissions
 }
 ```
- 
+
+acl settings
+```
+struct aclSettings {
+  bool openForPairing,
+  uint32_t defaultPairingPermissions
+}
+```
  
 # pairing mode
 
 The app has a button which owners can toggle to enable/disable pairing mode. Only owners can toggle pairing mode.
  
-## setPairingMode.json
+## setLocalPairingMode.json
+
 ```
 {
   "localPairing": 1
 }
 ```
 
-## getPairingMode.json
+## getLocalPairingMode.json
 ```
 {
   "localPairing": 0
-  "remotePairing": 0
 }
 ```
+
+## setLocalPairingPermissions.json
+
+What is the default permissions a user grants after being paired with
+the device locally, this call requires admin permissions.
+
+```
+{
+  "permissions": uint32_t mask (LOCAL_ACCESS | REMOTE_ACCESS | ADMIN)
+}
+```
+
+## getLocalPairingPermissions.json
+```
+{
+  "permissions": uint32_t mask (LOCAL_ACCESS | REMOTE_ACCESS | ADMIN)
+}
+```
+
 
 # users
 
