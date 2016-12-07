@@ -12,17 +12,17 @@ permission granted is controlled by the admin of the device.
 
 # unpaired fresh mode
 
-1. Client connects locally. Connection access is granted since device is unpaired. 
-2. Client calls getPublicInfo.json to find out if you are paired with the device. [TODO - opdater discover side]
-3. Client goes into pairing mode and calls pairWithDevice.json [TODO - opdater pairing side]
-4. Client is granted owner permissions to the device [TODO - opdater device stub]
+1. Client connects locally. Connection access is granted since device is unpaired. [AMP-68, AMP-71]
+2. Client calls getPublicInfo.json to find out if you are paired with the device. [AMP-68]
+3. Client goes into pairing mode and calls pairWithDevice.json [AMP-69]
+4. Client is granted owner permissions to the device [TODO - opdater device stub] 
 
 
 # paired device local pairing access
 
-1. Client connects locally. Connection access is granted since the connection is local. 
-2. Client calls getPublicInfo.json to find out that it is not paired.
-3. Client goes into pairing mode and calls pairWithDevice.json
+1. Client connects locally. Connection access is granted since the connection is local. [AMP-68, AMP-71]
+2. Client calls getPublicInfo.json to find out that it is not paired. [AMP-68]
+3. Client goes into pairing mode and calls pairWithDevice.json [AMP-68, AMP-69, AMP-71]
 4. Client is granted guest permissions since the device already have an owner.
 
 # access device you are paired with
@@ -54,6 +54,8 @@ request which tells what state current client is in
   "pairingMode": (CLOSED_FOR_PAIRING = 0 | OPEN_FOR_PAIRING = 1 )
 }
 ```
+
+(ug: paired = 0, pairingMode = 0 is an odd state ... what about eliminating paired and just use mode: UNPAIRED, PAIRED_CLOSED, PAIRED_OPEN)?
 
 # user model on the device
 
@@ -98,7 +100,7 @@ The app has a button which owners can toggle to enable/disable pairing mode. Onl
 }
 ```
 
-## setLocalPairingPermissions.json
+## setLocalPairingPermissions.json [AMP-70]
 
 What is the default permissions a user grants after being paired with
 the device locally, this call requires admin permissions.

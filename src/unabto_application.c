@@ -18,6 +18,8 @@ static uint32_t heatpump_mode_ = HPM_HEAT;
 static const char* device_name_ = "Living room";
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "img/chip-small.png";
+static uint8_t paired_ = 0;
+static uint8_t pairingMode_ = 1;
 
 void demo_application_set_device_name(const char* name) {
     device_name_ = name;
@@ -90,6 +92,8 @@ application_event_result application_event(application_request* request,
         if (!write_string(write_buffer, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(write_buffer, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(write_buffer, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, paired_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, pairingMode_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 10010:
