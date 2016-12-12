@@ -178,7 +178,7 @@ response:
 {
   "userName": string,
   "fingerprint": uint8_t[16]
-  "permisssions": uint32_t
+  "permissions": uint32_t
 }
 ```
   
