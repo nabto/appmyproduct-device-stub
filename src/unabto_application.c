@@ -18,8 +18,16 @@ static uint32_t heatpump_mode_ = HPM_HEAT;
 static const char* device_name_ = "Living room";
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "img/chip-small.png";
-static uint8_t paired_ = 0;
-static uint8_t pairingMode_ = 1;
+
+static uint8_t remote_access_enabled_ = 1;
+static uint8_t open_for_pairing_ = 1;
+static uint32_t default_permissions_after_pairing_ = 0;
+
+static uint8_t user_[128];
+static uint8_t user_paired_ = 0;
+static uint8_t user_fingerprint_[16];
+static uint8_t user_is_owner_ = 1;
+static uint32_t user_permissions_ = 0;
 
 void demo_application_set_device_name(const char* name) {
     device_name_ = name;
@@ -55,6 +63,28 @@ int write_string(buffer_write_t* write_buffer, const char* string) {
     return unabto_query_write_uint8_list(write_buffer, (uint8_t *)string, strlen(string));
 }
 
+int copy_buffer(buffer_write_t* read_buffer, uint8_t* dest, uint16_t bufSize, uint16_t* len) {
+    uint8_t* buffer;
+    if (!(unabto_query_read_uint8_list(read_buffer, &buffer, len))) {
+        return AER_REQ_TOO_SMALL;
+    }
+    if (*len > bufSize) {
+        return AER_REQ_TOO_LARGE;
+    }
+    memcpy(dest, buffer, *len);
+    return AER_REQ_RESPONSE_READY;
+}
+
+int copy_string(buffer_write_t* read_buffer, uint8_t* dest, uint16_t destSize) {
+    uint16_t len;
+    int res = copy_buffer(read_buffer, (uint8_t*)dest, destSize-1, &len);
+    if (res != AER_REQ_RESPONSE_READY) {
+        return res;
+    }
+    dest[len] = 0;
+    return AER_REQ_RESPONSE_READY;
+}
+
 int write_acl(buffer_write_t* write_buffer) {
     unabto_list_ctx list;
     unabto_query_write_list_start(write_buffer, &list);
@@ -81,6 +111,7 @@ application_event_result application_event(application_request* request,
                                            buffer_write_t* write_buffer) {
 
     NABTO_LOG_INFO(("Nabto application_event: %u", request->queryId));
+    memset(user_fingerprint_, 0xff, 16);
 
     // handle requests as defined in interface definition shared with
     // client - for the default demo, see
@@ -92,8 +123,8 @@ application_event_result application_event(application_request* request,
         if (!write_string(write_buffer, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(write_buffer, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(write_buffer, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, paired_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, pairingMode_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, user_paired_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 10010:
@@ -107,7 +138,36 @@ application_event_result application_event(application_request* request,
         // get_users.json
         if (!write_acl(write_buffer)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
+        
+    case 11010: {
+        // pair_with_device.json
+        int res = copy_string(read_buffer, user_, sizeof(user_));
+        if (res != AER_REQ_RESPONSE_READY) return res;
+        if (!write_string(write_buffer, (char*)user_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint8_list(write_buffer, user_fingerprint_, sizeof(user_fingerprint_))) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint32(write_buffer, user_permissions_)) return AER_REQ_RSP_TOO_LARGE;
+        user_paired_ = 1;
+        return AER_REQ_RESPONSE_READY;
+    }
 
+    case 11020:
+        // get_security_settings.json
+        if (!buffer_write_uint8(write_buffer, user_is_owner_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, remote_access_enabled_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint32(write_buffer, default_permissions_after_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        return AER_REQ_RESPONSE_READY;
+
+    case 11030:
+        // set_security_settings.json
+        if (!buffer_read_uint8(read_buffer, &remote_access_enabled_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_read_uint8(read_buffer, &open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_read_uint32(read_buffer, &default_permissions_after_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, remote_access_enabled_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint8(write_buffer, open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!buffer_write_uint32(write_buffer, default_permissions_after_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        return AER_REQ_RESPONSE_READY;    
+        
     case 20000: 
         // heatpump_get_full_state.json
         if (!buffer_write_uint8(write_buffer, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
