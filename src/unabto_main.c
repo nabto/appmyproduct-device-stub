@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
         help("Invalid cryptographic key specified", argv[0]);
         return false;
     }
-
+  
     if (config.local_port_str) {
         nms->localPort = atoi(config.local_port_str);
     }
@@ -76,6 +76,8 @@ int main(int argc, char* argv[])
     if (!unabto_init()) {
         NABTO_LOG_FATAL(("Failed at nabto_main_init"));
     }
+
+    demo_init();
 
     NABTO_LOG_INFO(("AppMyProduct demo stub [%s] running!", nms->id));
 

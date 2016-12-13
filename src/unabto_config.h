@@ -6,6 +6,6 @@
 #define NABTO_ENABLE_UCRYPTO                        1
 
 #define NABTO_ENABLE_LOGGING                        1
-#define NABTO_LOG_ALL                               0
+#define NABTO_LOG_ALL                               1
 
 #endif
