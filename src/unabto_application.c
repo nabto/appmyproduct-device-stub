@@ -4,6 +4,7 @@
 
 #include "unabto/unabto_app.h"
 #include <stdio.h>
+#include "unabto/util/unabto_buffer.h"
 
 typedef enum { HPM_COOL = 0,
                HPM_HEAT = 1,
@@ -89,16 +90,16 @@ int write_acl(buffer_write_t* write_buffer) {
     unabto_list_ctx list;
     unabto_query_write_list_start(write_buffer, &list);
 
-    if (!write_string(write_buffer, "Ulrik's iPhone SE")) return 0;
     if (!write_string(write_buffer, "2c:4d:e2:d0:2c:42:d0:2c:4d:cc:32:00:12:a5:dd:af")) return 0;
+    if (!write_string(write_buffer, "Ulrik's iPhone SE")) return 0;
     if (!unabto_query_write_uint32(write_buffer, 1)) return 0;
 
-    if (!write_string(write_buffer, "Sofus' iPhone 5")) return 0;
     if (!write_string(write_buffer, "42:d0:2c:4d:cc:32:00:12:a5:dd:af:d0:2c:4d:42:d0")) return 0;
+    if (!write_string(write_buffer, "Sofus' iPhone 5")) return 0;
     if (!unabto_query_write_uint32(write_buffer, 0)) return 0;
 
-    if (!write_string(write_buffer, "Ulriks' iPad")) return 0;
     if (!write_string(write_buffer, "87:e3:4c:57:f4:68:6c:bb:a5:dd:af:d0:2c:4d:42:d0")) return 0;
+    if (!write_string(write_buffer, "Ulriks' iPad")) return 0;
     if (!unabto_query_write_uint32(write_buffer, 0)) return 0;
 
     if (!unabto_query_write_list_end(write_buffer, &list, 3)) return 0;
@@ -143,8 +144,8 @@ application_event_result application_event(application_request* request,
         // pair_with_device.json
         int res = copy_string(read_buffer, user_, sizeof(user_));
         if (res != AER_REQ_RESPONSE_READY) return res;
-        if (!write_string(write_buffer, (char*)user_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8_list(write_buffer, user_fingerprint_, sizeof(user_fingerprint_))) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(write_buffer, (char*)user_)) return AER_REQ_RSP_TOO_LARGE;
         if (!buffer_write_uint32(write_buffer, user_permissions_)) return AER_REQ_RSP_TOO_LARGE;
         user_paired_ = 1;
         return AER_REQ_RESPONSE_READY;
