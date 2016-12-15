@@ -139,10 +139,7 @@ bool allow_client_access(nabto_connect* connection) {
     bool allow = fp_acl_is_connection_allowed(connection);
     NABTO_LOG_INFO(("Allowing connect request: %s", (allow ? "yes" : "no")));
     debug_dump_acl();
-    return allow;
-    
-//#pragma message("Always allowing client access due to AMP-87")
-//    return true; // local connects just time out in the simulator instead of showing access denied
+    return allow;    
 }
 
 application_event_result application_event(application_request* request,
@@ -164,7 +161,7 @@ application_event_result application_event(application_request* request,
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint8(query_response, 0)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
 
         return AER_REQ_RESPONSE_READY;
