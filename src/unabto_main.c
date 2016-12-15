@@ -77,6 +77,8 @@ int main(int argc, char* argv[])
         NABTO_LOG_FATAL(("Failed at nabto_main_init"));
     }
 
+    demo_init();
+
     NABTO_LOG_INFO(("AppMyProduct demo stub [%s] running!", nms->id));
 
     while (true) {

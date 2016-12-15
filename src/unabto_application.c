@@ -27,11 +27,28 @@ static uint32_t default_permissions_after_pairing_ = 0;
 
 static uint8_t user_[128];
 static uint8_t user_paired_ = 0;
-static uint8_t user_fingerprint_[16];
 static uint8_t user_is_owner_ = 1;
 static uint32_t user_permissions_ = 0;
 
 static struct fp_acl_db db_;
+
+void debug_dump_acl() {
+    void* it = db_.first();
+    uint32_t offset = 0;
+    while (it != NULL) {
+        struct fp_acl_user user;
+        fp_acl_db_status res = db_.load(it, &user);
+        if (res != FP_ACL_DB_OK) {
+            printf("ACL error %d\n", res);
+            return;
+        }
+        NABTO_LOG_INFO(("%s [%02x:%02x:%02x:%02x:...]: %04x",
+                        user.name,
+                        user.fp[0], user.fp[1], user.fp[2], user.fp[3],
+                        user.permissions));
+        it = db_.next(it);
+    }
+}
 
 void demo_init() {
     struct fp_acl_settings default_settings;
@@ -121,10 +138,11 @@ int write_acl(unabto_query_response* write_buffer) {
 bool allow_client_access(nabto_connect* connection) {
     bool allow = fp_acl_is_connection_allowed(connection);
     NABTO_LOG_INFO(("Allowing connect request: %s", (allow ? "yes" : "no")));
-    // return allow;
+    debug_dump_acl();
+    return allow;
     
-#pragma message("Always allowing client access due to AMP-87")
-    return true; // local connects just time out in the simulator instead of showing access denied
+//#pragma message("Always allowing client access due to AMP-87")
+//    return true; // local connects just time out in the simulator instead of showing access denied
 }
 
 application_event_result application_event(application_request* request,
@@ -132,11 +150,13 @@ application_event_result application_event(application_request* request,
                                            unabto_query_response* query_response) {
 
     NABTO_LOG_INFO(("Nabto application_event: %u", request->queryId));
-    memset(user_fingerprint_, 0xff, 16);
+    debug_dump_acl();
 
     // handle requests as defined in interface definition shared with
     // client - for the default demo, see
     // https://github.com/nabto/ionic-starter-nabto/blob/master/www/nabto/unabto_queries.xml
+
+    application_event_result res;
     
     switch (request->queryId) {
     case 10000:
@@ -144,7 +164,7 @@ application_event_result application_event(application_request* request,
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint8(query_response, user_paired_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint8(query_response, 0)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
 
         return AER_REQ_RESPONSE_READY;
@@ -166,7 +186,9 @@ application_event_result application_event(application_request* request,
         // pair_with_device.json
 //        if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
         user_paired_ = 1; // todo
-        return fp_acl_ae_pair_with_device(request, query_request, query_response);
+        res = fp_acl_ae_pair_with_device(request, query_request, query_response);
+        debug_dump_acl();
+        return res;
 
     case 11020:
         // get_system_security_settings.json
@@ -178,7 +200,7 @@ application_event_result application_event(application_request* request,
 
     case 20000: 
         // heatpump_get_full_state.json
-//        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; // nop
+        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
         if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint32(query_response, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
@@ -187,6 +209,7 @@ application_event_result application_event(application_request* request,
 
     case 20010:
         // heatpump_set_activation_state.json
+        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
         if (!unabto_query_read_uint8(query_request, &heatpump_state_)) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
         NABTO_LOG_INFO(("Got (and returned) state %d", heatpump_state_));
@@ -194,12 +217,14 @@ application_event_result application_event(application_request* request,
 
     case 20020:
         // heatpump_set_target_temperature.json
+        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
         if (!unabto_query_read_uint32(query_request, (uint32_t*)(&heatpump_target_temperature_))) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 20030:
         // heatpump_set_mode.json
+        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
         if (!unabto_query_read_uint32(query_request, &heatpump_mode_)) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint32(query_response, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
