@@ -4,7 +4,8 @@
 
 #include "unabto/unabto_app.h"
 #include <stdio.h>
-#include "unabto/util/unabto_buffer.h"
+#include <modules/fingerprint_acl/fp_acl_ae.h>
+#include <modules/fingerprint_acl/fp_acl_memory.h>
 
 typedef enum { HPM_COOL = 0,
                HPM_HEAT = 1,
@@ -29,6 +30,16 @@ static uint8_t user_paired_ = 0;
 static uint8_t user_fingerprint_[16];
 static uint8_t user_is_owner_ = 1;
 static uint32_t user_permissions_ = 0;
+
+static struct fp_acl_db db_;
+
+void demo_init() {
+    struct fp_acl_settings default_settings;
+    default_settings.systemPermissions = FP_ACL_SYSTEM_PERMISSION_ALL;
+    default_settings.defaultPermissions = FP_ACL_PERMISSION_ALL;
+    fp_mem_init(&db_, &default_settings, NULL);
+    fp_acl_ae_init(&db_);
+}
 
 void demo_application_set_device_name(const char* name) {
     device_name_ = name;
@@ -60,11 +71,11 @@ void demo_application_tick() {
 #endif
 }
 
-int write_string(buffer_write_t* write_buffer, const char* string) {
+int write_string(unabto_query_response* write_buffer, const char* string) {
     return unabto_query_write_uint8_list(write_buffer, (uint8_t *)string, strlen(string));
 }
 
-int copy_buffer(buffer_write_t* read_buffer, uint8_t* dest, uint16_t bufSize, uint16_t* len) {
+int copy_buffer(unabto_query_response* read_buffer, uint8_t* dest, uint16_t bufSize, uint16_t* len) {
     uint8_t* buffer;
     if (!(unabto_query_read_uint8_list(read_buffer, &buffer, len))) {
         return AER_REQ_TOO_SMALL;
@@ -76,7 +87,7 @@ int copy_buffer(buffer_write_t* read_buffer, uint8_t* dest, uint16_t bufSize, ui
     return AER_REQ_RESPONSE_READY;
 }
 
-int copy_string(buffer_write_t* read_buffer, uint8_t* dest, uint16_t destSize) {
+int copy_string(unabto_query_response* read_buffer, uint8_t* dest, uint16_t destSize) {
     uint16_t len;
     int res = copy_buffer(read_buffer, (uint8_t*)dest, destSize-1, &len);
     if (res != AER_REQ_RESPONSE_READY) {
@@ -86,7 +97,7 @@ int copy_string(buffer_write_t* read_buffer, uint8_t* dest, uint16_t destSize) {
     return AER_REQ_RESPONSE_READY;
 }
 
-int write_acl(buffer_write_t* write_buffer) {
+int write_acl(unabto_query_response* write_buffer) {
     unabto_list_ctx list;
     unabto_query_write_list_start(write_buffer, &list);
 
@@ -107,9 +118,18 @@ int write_acl(buffer_write_t* write_buffer) {
     return 1;
 }
 
+bool allow_client_access(nabto_connect* connection) {
+    bool allow = fp_acl_is_connection_allowed(connection);
+    NABTO_LOG_INFO(("Allowing connect request: %s", (allow ? "yes" : "no")));
+    // return allow;
+    
+#pragma message("Always allowing client access due to AMP-87")
+    return true; // local connects just time out in the simulator instead of showing access denied
+}
+
 application_event_result application_event(application_request* request,
-                                           buffer_read_t* read_buffer,
-                                           buffer_write_t* write_buffer) {
+                                           unabto_query_request* query_request,
+                                           unabto_query_response* query_response) {
 
     NABTO_LOG_INFO(("Nabto application_event: %u", request->queryId));
     memset(user_fingerprint_, 0xff, 16);
@@ -121,79 +141,67 @@ application_event_result application_event(application_request* request,
     switch (request->queryId) {
     case 10000:
         // get_public_device_info.json
-        if (!write_string(write_buffer, device_name_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(write_buffer, device_product_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(write_buffer, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, user_paired_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint8(query_response, user_paired_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
+
         return AER_REQ_RESPONSE_READY;
 
     case 10010:
         // set_device_info.json
-        if (!write_string(write_buffer, device_name_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(write_buffer, device_product_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(write_buffer, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
+//        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_ADMIN)) return AER_REQ_NO_ACCESS;
+        if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 11000:
         // get_users.json
-        if (!write_acl(write_buffer)) return AER_REQ_RSP_TOO_LARGE;
-        return AER_REQ_RESPONSE_READY;
+//        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_ADMIN)) return AER_REQ_NO_ACCESS;
+        return fp_acl_ae_users_get(request, query_request, query_response);
         
-    case 11010: {
+    case 11010: 
         // pair_with_device.json
-        int res = copy_string(read_buffer, user_, sizeof(user_));
-        if (res != AER_REQ_RESPONSE_READY) return res;
-        if (!unabto_query_write_uint8_list(write_buffer, user_fingerprint_, sizeof(user_fingerprint_))) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(write_buffer, (char*)user_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint32(write_buffer, user_permissions_)) return AER_REQ_RSP_TOO_LARGE;
-        user_paired_ = 1;
-        return AER_REQ_RESPONSE_READY;
-    }
+//        if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
+        user_paired_ = 1; // todo
+        return fp_acl_ae_pair_with_device(request, query_request, query_response);
 
     case 11020:
-        // get_security_settings.json
-        if (!buffer_write_uint8(write_buffer, user_is_owner_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, remote_access_enabled_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint32(write_buffer, default_permissions_after_pairing_)) return AER_REQ_RSP_TOO_LARGE;
-        return AER_REQ_RESPONSE_READY;
+        // get_system_security_settings.json
+        return fp_acl_ae_system_get_acl_settings(request, query_request, query_response);
 
     case 11030:
-        // set_security_settings.json
-        if (!buffer_read_uint8(read_buffer, &remote_access_enabled_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_read_uint8(read_buffer, &open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_read_uint32(read_buffer, &default_permissions_after_pairing_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, remote_access_enabled_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint8(write_buffer, open_for_pairing_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint32(write_buffer, default_permissions_after_pairing_)) return AER_REQ_RSP_TOO_LARGE;
-        return AER_REQ_RESPONSE_READY;    
-        
+        // get_user_permissions.json
+        return fp_acl_ae_user_me(request, query_request, query_response);
+
     case 20000: 
         // heatpump_get_full_state.json
-        if (!buffer_write_uint8(write_buffer, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint32(write_buffer, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint32(write_buffer, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!buffer_write_uint32(write_buffer, (uint32_t)heatpump_room_temperature_)) return AER_REQ_RSP_TOO_LARGE;
+//        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; // nop
+        if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint32(query_response, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_room_temperature_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 20010:
         // heatpump_set_activation_state.json
-        if (!buffer_read_uint8(read_buffer, &heatpump_state_)) return AER_REQ_TOO_SMALL;
-        if (!buffer_write_uint8(write_buffer, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_read_uint8(query_request, &heatpump_state_)) return AER_REQ_TOO_SMALL;
+        if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
         NABTO_LOG_INFO(("Got (and returned) state %d", heatpump_state_));
         return AER_REQ_RESPONSE_READY;
 
     case 20020:
         // heatpump_set_target_temperature.json
-        if (!buffer_read_uint32(read_buffer, (uint32_t*)(&heatpump_target_temperature_))) return AER_REQ_TOO_SMALL;
-        if (!buffer_write_uint32(write_buffer, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_read_uint32(query_request, (uint32_t*)(&heatpump_target_temperature_))) return AER_REQ_TOO_SMALL;
+        if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 20030:
         // heatpump_set_mode.json
-        if (!buffer_read_uint32(read_buffer, &heatpump_mode_)) return AER_REQ_TOO_SMALL;
-        if (!buffer_write_uint32(write_buffer, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_read_uint32(query_request, &heatpump_mode_)) return AER_REQ_TOO_SMALL;
+        if (!unabto_query_write_uint32(query_response, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     default:
