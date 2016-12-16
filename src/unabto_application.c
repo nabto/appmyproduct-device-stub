@@ -25,11 +25,6 @@ static uint8_t remote_access_enabled_ = 1;
 static uint8_t open_for_pairing_ = 1;
 static uint32_t default_permissions_after_pairing_ = 0;
 
-static uint8_t user_[128];
-static uint8_t user_paired_ = 0;
-static uint8_t user_is_owner_ = 1;
-static uint32_t user_permissions_ = 0;
-
 static struct fp_acl_db db_;
 
 void debug_dump_acl() {
@@ -50,10 +45,21 @@ void debug_dump_acl() {
     }
 }
 
+void set_default_acl_settings(uint32_t system, uint32_t user) {
+    struct fp_acl_settings default_settings;
+    default_settings.systemPermissions = system;
+    default_settings.defaultPermissions = user;
+    db_.save_settings(&default_settings);
+}
+
 void demo_init() {
     struct fp_acl_settings default_settings;
-    default_settings.systemPermissions = FP_ACL_SYSTEM_PERMISSION_ALL;
-    default_settings.defaultPermissions = FP_ACL_PERMISSION_ALL;
+    default_settings.systemPermissions =
+        FP_ACL_SYSTEM_PERMISSION_PAIRING |
+        FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS;
+    default_settings.defaultPermissions = FP_ACL_PERMISSION_ADMIN |
+        FP_ACL_PERMISSION_LOCAL_ACCESS |
+        FP_ACL_PERMISSION_REMOTE_ACCESS;
     fp_mem_init(&db_, &default_settings, NULL);
     fp_acl_ae_init(&db_);
 }
@@ -182,8 +188,10 @@ application_event_result application_event(application_request* request,
     case 11010: 
         // pair_with_device.json
 //        if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
-        user_paired_ = 1; // todo
         res = fp_acl_ae_pair_with_device(request, query_request, query_response);
+        if (res == AER_REQ_RESPONSE_READY) {
+            set_default_acl_settings(FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS, FP_ACL_PERMISSION_NONE);
+        }
         debug_dump_acl();
         return res;
 
