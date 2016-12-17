@@ -21,11 +21,10 @@ static const char* device_name_ = "Living room";
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "img/chip-small.png";
 
-static uint8_t remote_access_enabled_ = 1;
-static uint8_t open_for_pairing_ = 1;
-static uint32_t default_permissions_after_pairing_ = 0;
-
 static struct fp_acl_db db_;
+
+#define REQUIRES_GUEST FP_ACL_PERMISSION_NONE
+#define REQUIRES_OWNER FP_ACL_PERMISSION_ADMIN
 
 void debug_dump_acl() {
     void* it = db_.first();
@@ -34,7 +33,7 @@ void debug_dump_acl() {
         struct fp_acl_user user;
         fp_acl_db_status res = db_.load(it, &user);
         if (res != FP_ACL_DB_OK) {
-            printf("ACL error %d\n", res);
+            NABTO_LOG_WARN(("ACL error %d\n", res));
             return;
         }
         NABTO_LOG_INFO(("%s [%02x:%02x:%02x:%02x:...]: %04x",
@@ -45,19 +44,13 @@ void debug_dump_acl() {
     }
 }
 
-void set_default_acl_settings(uint32_t system, uint32_t user) {
-    struct fp_acl_settings default_settings;
-    default_settings.systemPermissions = system;
-    default_settings.defaultPermissions = user;
-    db_.save_settings(&default_settings);
-}
-
 void demo_init() {
     struct fp_acl_settings default_settings;
     default_settings.systemPermissions =
         FP_ACL_SYSTEM_PERMISSION_PAIRING |
         FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS;
-    default_settings.defaultPermissions = FP_ACL_PERMISSION_ADMIN |
+    default_settings.defaultPermissions =
+        FP_ACL_PERMISSION_ADMIN |
         FP_ACL_PERMISSION_LOCAL_ACCESS |
         FP_ACL_PERMISSION_REMOTE_ACCESS;
     fp_mem_init(&db_, &default_settings, NULL);
@@ -98,52 +91,10 @@ int write_string(unabto_query_response* write_buffer, const char* string) {
     return unabto_query_write_uint8_list(write_buffer, (uint8_t *)string, strlen(string));
 }
 
-int copy_buffer(unabto_query_response* read_buffer, uint8_t* dest, uint16_t bufSize, uint16_t* len) {
-    uint8_t* buffer;
-    if (!(unabto_query_read_uint8_list(read_buffer, &buffer, len))) {
-        return AER_REQ_TOO_SMALL;
-    }
-    if (*len > bufSize) {
-        return AER_REQ_TOO_LARGE;
-    }
-    memcpy(dest, buffer, *len);
-    return AER_REQ_RESPONSE_READY;
-}
-
-int copy_string(unabto_query_response* read_buffer, uint8_t* dest, uint16_t destSize) {
-    uint16_t len;
-    int res = copy_buffer(read_buffer, (uint8_t*)dest, destSize-1, &len);
-    if (res != AER_REQ_RESPONSE_READY) {
-        return res;
-    }
-    dest[len] = 0;
-    return AER_REQ_RESPONSE_READY;
-}
-
-int write_acl(unabto_query_response* write_buffer) {
-    unabto_list_ctx list;
-    unabto_query_write_list_start(write_buffer, &list);
-
-    if (!write_string(write_buffer, "2c:4d:e2:d0:2c:42:d0:2c:4d:cc:32:00:12:a5:dd:af")) return 0;
-    if (!write_string(write_buffer, "Ulrik's iPhone SE")) return 0;
-    if (!unabto_query_write_uint32(write_buffer, 1)) return 0;
-
-    if (!write_string(write_buffer, "42:d0:2c:4d:cc:32:00:12:a5:dd:af:d0:2c:4d:42:d0")) return 0;
-    if (!write_string(write_buffer, "Sofus' iPhone 5")) return 0;
-    if (!unabto_query_write_uint32(write_buffer, 0)) return 0;
-
-    if (!write_string(write_buffer, "87:e3:4c:57:f4:68:6c:bb:a5:dd:af:d0:2c:4d:42:d0")) return 0;
-    if (!write_string(write_buffer, "Ulriks' iPad")) return 0;
-    if (!unabto_query_write_uint32(write_buffer, 0)) return 0;
-
-    if (!unabto_query_write_list_end(write_buffer, &list, 3)) return 0;
-
-    return 1;
-}
-
 bool allow_client_access(nabto_connect* connection) {
-    bool allow = fp_acl_is_connection_allowed(connection);
-    NABTO_LOG_INFO(("Allowing connect request: %s", (allow ? "yes" : "no")));
+    bool local = connection->isLocal;
+    bool allow = fp_acl_is_connection_allowed(connection) || local;
+    NABTO_LOG_INFO(("Allowing %s connect request: %s", (local ? "local" : "remote"), (allow ? "yes" : "no")));
     debug_dump_acl();
     return allow;    
 }
@@ -174,7 +125,7 @@ application_event_result application_event(application_request* request,
 
     case 10010:
         // set_device_info.json
-//        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_ADMIN)) return AER_REQ_NO_ACCESS;
+        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
@@ -182,30 +133,34 @@ application_event_result application_event(application_request* request,
 
     case 11000:
         // get_users.json
-//        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_ADMIN)) return AER_REQ_NO_ACCESS;
+        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
         return fp_acl_ae_users_get(request, query_request, query_response);
         
     case 11010: 
         // pair_with_device.json
-//        if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
+        if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
         res = fp_acl_ae_pair_with_device(request, query_request, query_response);
-        if (res == AER_REQ_RESPONSE_READY) {
-            set_default_acl_settings(FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS, FP_ACL_PERMISSION_NONE);
-        }
         debug_dump_acl();
         return res;
 
     case 11020:
-        // get_system_security_settings.json
-        return fp_acl_ae_system_get_acl_settings(request, query_request, query_response);
+        // get_current_user.json
+        if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
+        return fp_acl_ae_user_me(request, query_request, query_response);
 
     case 11030:
-        // get_user_permissions.json
-        return fp_acl_ae_user_me(request, query_request, query_response);
+        // get_system_security_settings.json
+        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
+        return fp_acl_ae_system_get_acl_settings(request, query_request, query_response);
+
+    case 11040:
+        // set_system_security_settings.json
+        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
+        return fp_acl_ae_system_set_acl_settings(request, query_request, query_response);
 
     case 20000: 
         // heatpump_get_full_state.json
-        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
+        if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
         if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint32(query_response, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
@@ -214,7 +169,7 @@ application_event_result application_event(application_request* request,
 
     case 20010:
         // heatpump_set_activation_state.json
-        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
+        if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
         if (!unabto_query_read_uint8(query_request, &heatpump_state_)) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
         NABTO_LOG_INFO(("Got (and returned) state %d", heatpump_state_));
@@ -222,14 +177,14 @@ application_event_result application_event(application_request* request,
 
     case 20020:
         // heatpump_set_target_temperature.json
-        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
+        if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
         if (!unabto_query_read_uint32(query_request, (uint32_t*)(&heatpump_target_temperature_))) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 20030:
         // heatpump_set_mode.json
-        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_NONE)) return AER_REQ_NO_ACCESS; 
+        if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
         if (!unabto_query_read_uint32(query_request, &heatpump_mode_)) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint32(query_response, heatpump_mode_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
