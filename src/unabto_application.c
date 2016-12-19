@@ -49,7 +49,7 @@ void demo_init() {
     default_settings.systemPermissions =
         FP_ACL_SYSTEM_PERMISSION_PAIRING |
         FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS;
-    default_settings.defaultPermissions =
+    default_settings.defaultUserPermissions =
         FP_ACL_PERMISSION_LOCAL_ACCESS |
         FP_ACL_PERMISSION_REMOTE_ACCESS;
     fp_mem_init(&db_, &default_settings, NULL);
