@@ -50,7 +50,6 @@ void demo_init() {
         FP_ACL_SYSTEM_PERMISSION_PAIRING |
         FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS;
     default_settings.defaultPermissions =
-        FP_ACL_PERMISSION_ADMIN |
         FP_ACL_PERMISSION_LOCAL_ACCESS |
         FP_ACL_PERMISSION_REMOTE_ACCESS;
     fp_mem_init(&db_, &default_settings, NULL);
@@ -118,8 +117,9 @@ application_event_result application_event(application_request* request,
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE; // TODO
+        if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
 
         return AER_REQ_RESPONSE_READY;
 
