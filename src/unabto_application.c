@@ -17,7 +17,8 @@ static int32_t heatpump_room_temperature_ = 19;
 static int32_t heatpump_target_temperature_ = 23;
 static uint32_t heatpump_mode_ = HPM_HEAT;
 
-static const char* device_name_ = "Living room";
+#define MAX_DEVICE_NAME_LENGTH 50
+static char device_name_[MAX_DEVICE_NAME_LENGTH];
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "img/chip-small.png";
 
@@ -59,8 +60,8 @@ void demo_init() {
     fp_acl_ae_init(&db_);
 }
 
-void demo_application_set_device_name(const char* name) {
-    device_name_ = name;
+void demo_application_set_device_name(char* name) {
+    strncpy(device_name_, name, MAX_DEVICE_NAME_LENGTH);
 }
 
 void demo_application_set_device_product(const char* product) {
@@ -87,6 +88,28 @@ void demo_application_tick() {
     size_t ticks_ = 0;
     heatpump_room_temperature_ = heatpump_target_temperature_ + ticks++ % 2;
 #endif
+}
+
+int copy_buffer(unabto_query_request* read_buffer, uint8_t* dest, uint16_t bufSize, uint16_t* len) {
+    uint8_t* buffer;
+    if (!(unabto_query_read_uint8_list(read_buffer, &buffer, len))) {
+        return AER_REQ_TOO_SMALL;
+    }
+    if (*len > bufSize) {
+        return AER_REQ_TOO_LARGE;
+    }
+    memcpy(dest, buffer, *len);
+    return AER_REQ_RESPONSE_READY;
+}
+
+int copy_string(unabto_query_request* read_buffer, char* dest, uint16_t destSize) {
+    uint16_t len;
+    int res = copy_buffer(read_buffer, (uint8_t*)dest, destSize-1, &len);
+    if (res != AER_REQ_RESPONSE_READY) {
+        return res;
+    }
+    dest[len] = 0;
+    return AER_REQ_RESPONSE_READY;
 }
 
 int write_string(unabto_query_response* write_buffer, const char* string) {
@@ -129,9 +152,9 @@ application_event_result application_event(application_request* request,
     case 10010:
         // set_device_info.json
         if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
+        int res = copy_string(query_request, device_name_, sizeof(device_name_));
+        if (res != AER_REQ_RESPONSE_READY) return res;
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 11000:
