@@ -52,6 +52,10 @@ void demo_init() {
     default_settings.defaultUserPermissions =
         FP_ACL_PERMISSION_LOCAL_ACCESS |
         FP_ACL_PERMISSION_REMOTE_ACCESS;
+    default_settings.firstUserPermissions =
+        FP_ACL_PERMISSION_ADMIN |
+        FP_ACL_PERMISSION_LOCAL_ACCESS |
+        FP_ACL_PERMISSION_REMOTE_ACCESS;
     fp_mem_init(&db_, &default_settings, NULL);
     fp_acl_ae_init(&db_);
 }
@@ -133,30 +137,26 @@ application_event_result application_event(application_request* request,
 
     case 11000:
         // get_users.json
-        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
-        return fp_acl_ae_users_get(request, query_request, query_response);
+        return fp_acl_ae_users_get(request, query_request, query_response); // implied admin priv check
         
     case 11010: 
         // pair_with_device.json
         if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
-        res = fp_acl_ae_pair_with_device(request, query_request, query_response);
+        res = fp_acl_ae_pair_with_device(request, query_request, query_response); 
         debug_dump_acl();
         return res;
 
     case 11020:
         // get_current_user.json
-        if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
-        return fp_acl_ae_user_me(request, query_request, query_response);
+        return fp_acl_ae_user_me(request, query_request, query_response); 
 
     case 11030:
         // get_system_security_settings.json
-        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
-        return fp_acl_ae_system_get_acl_settings(request, query_request, query_response);
+        return fp_acl_ae_system_get_acl_settings(request, query_request, query_response); // implied admin priv check
 
     case 11040:
         // set_system_security_settings.json
-        if (!fp_acl_is_request_allowed(request, REQUIRES_OWNER)) return AER_REQ_NO_ACCESS;
-        return fp_acl_ae_system_set_acl_settings(request, query_request, query_response);
+        return fp_acl_ae_system_set_acl_settings(request, query_request, query_response); // implied admin priv check
 
     case 20000: 
         // heatpump_get_full_state.json
