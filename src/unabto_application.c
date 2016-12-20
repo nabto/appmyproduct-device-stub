@@ -50,8 +50,7 @@ void demo_init() {
         FP_ACL_SYSTEM_PERMISSION_PAIRING |
         FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS;
     default_settings.defaultUserPermissions =
-        FP_ACL_PERMISSION_LOCAL_ACCESS |
-        FP_ACL_PERMISSION_REMOTE_ACCESS;
+        FP_ACL_PERMISSION_LOCAL_ACCESS;
     default_settings.firstUserPermissions =
         FP_ACL_PERMISSION_ADMIN |
         FP_ACL_PERMISSION_LOCAL_ACCESS |
