@@ -121,7 +121,7 @@ application_event_result application_event(application_request* request,
         if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE; // TODO
+        if (!unabto_query_write_uint8(query_response, fp_acl_is_user_paired(request))) return AER_REQ_RSP_TOO_LARGE; 
         if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
 
         return AER_REQ_RESPONSE_READY;
