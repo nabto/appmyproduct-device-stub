@@ -188,6 +188,10 @@ application_event_result application_event(application_request* request,
         // set_user_name.json
         return fp_acl_ae_user_set_name(request, query_request, query_response); // implied admin priv check
 
+    case 11070:
+        // remove_user.json
+        return fp_acl_ae_user_remove(request, query_request, query_response); // implied admin priv check
+
     case 20000: 
         // heatpump_get_full_state.json
         if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
