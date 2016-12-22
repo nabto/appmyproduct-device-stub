@@ -180,6 +180,14 @@ application_event_result application_event(application_request* request,
         // set_system_security_settings.json
         return fp_acl_ae_system_set_acl_settings(request, query_request, query_response); // implied admin priv check
 
+    case 11050:
+        // set_user_permissions.json
+        return fp_acl_ae_user_set_permissions(request, query_request, query_response); // implied admin priv check
+
+    case 11060:
+        // set_user_name.json
+        return fp_acl_ae_user_set_name(request, query_request, query_response); // implied admin priv check
+
     case 20000: 
         // heatpump_get_full_state.json
         if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
