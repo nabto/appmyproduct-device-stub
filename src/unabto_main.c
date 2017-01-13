@@ -31,7 +31,7 @@ static void help(const char* errmsg, const char *progname)
     printf("\nAppMyProduct demo stub application to try the platform and example apps.\n");
     printf("Obtain a device id and crypto key from www.appmyproduct.com\n\n");
 
-    printf("Usage: %s -d <device id> -k <crypto key> [-N <demo display name>] [-P <product name>] [-I <icon url>]\n\n", progname);
+    printf("Usage: %s -d <device id> -k <crypto key> [-N <demo display name>] [-P <product name>] [-I <icon url>] [-p <local/discovery port>]\n\n", progname);
 }
 
 

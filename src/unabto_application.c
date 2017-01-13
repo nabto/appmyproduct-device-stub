@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <modules/fingerprint_acl/fp_acl_ae.h>
 #include <modules/fingerprint_acl/fp_acl_memory.h>
+#include <modules/fingerprint_acl/fp_acl_file.h>
 
 typedef enum { HPM_COOL = 0,
                HPM_HEAT = 1,
@@ -17,12 +18,14 @@ static int32_t heatpump_room_temperature_ = 19;
 static int32_t heatpump_target_temperature_ = 23;
 static uint32_t heatpump_mode_ = HPM_HEAT;
 
+#define DEVICE_NAME_DEFAULT "AMP stub"
 #define MAX_DEVICE_NAME_LENGTH 50
 static char device_name_[MAX_DEVICE_NAME_LENGTH];
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "img/chip-small.png";
 
 static struct fp_acl_db db_;
+struct fp_mem_persistence fp_file_;
 
 #define REQUIRES_GUEST FP_ACL_PERMISSION_NONE
 #define REQUIRES_OWNER FP_ACL_PERMISSION_ADMIN
@@ -56,8 +59,14 @@ void demo_init() {
         FP_ACL_PERMISSION_ADMIN |
         FP_ACL_PERMISSION_LOCAL_ACCESS |
         FP_ACL_PERMISSION_REMOTE_ACCESS;
-    fp_mem_init(&db_, &default_settings, NULL);
+
+    if (fp_acl_file_init("persistence.bin", "tmp.bin", &fp_file_) != FP_ACL_DB_OK) {
+        NABTO_LOG_ERROR(("cannot load acl file"));
+        exit(1);
+    }
+    fp_mem_init(&db_, &default_settings, &fp_file_);
     fp_acl_ae_init(&db_);
+    snprintf(device_name_, sizeof(device_name_), DEVICE_NAME_DEFAULT);
 }
 
 void demo_application_set_device_name(char* name) {
