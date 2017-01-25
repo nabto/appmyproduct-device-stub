@@ -1,4 +1,4 @@
-# AppMyProduct device stub
+# AppMyProduct device stub - 1.0 BETA
 
 General [AppMyProduct](https://www.appmyproduct.com) device stub
 application to enable testing of AMP sample apps and to use as basis
