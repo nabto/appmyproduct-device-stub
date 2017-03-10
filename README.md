@@ -23,6 +23,9 @@ When these prerequisites are satisfied, the following steps can be performed:
 # Fetch the stub source - note the --recursive option to also install the uNabto SDK
 git clone --recursive https://github.com/nabto/appmyproduct-device-stub
 
+# got to the main directory
+cd appmyproduct-device-stub
+
 # Create a build directory
 mkdir build
 cd build
