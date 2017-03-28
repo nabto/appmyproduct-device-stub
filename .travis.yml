@@ -1,0 +1,18 @@
+language: c
+
+addons:
+  apt:
+    sources:
+      - george-edison55-precise-backports
+    packages:
+      - cmake
+      - cmake-data
+
+before_script:
+  - cmake --version
+
+script:
+  - mkdir cibuild
+  - cd cibuild
+  - cmake .. && make -j VERBOSE=1
+  - ./test/unittest/unabto_unittest
