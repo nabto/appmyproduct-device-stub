@@ -14,12 +14,13 @@ before_script:
 script:
 - mkdir cibuild
 - cd cibuild
-- cmake .. && make -j VERBOSE=1
+- cmake -D CMAKE_INSTALL_PREFIX=`pwd`/../install ../
+- make install VERBOSE=1
 deploy:
   provider: releases
   api_key:
     secure: I0VKQ2PxnzMFGBuyuKvYSF4y7HjLqAQ9AcPdbKTSfSfwimBBJ4iGZ3VFWbbQUqPn9HYNcmAJnl33zjCRt7p9GSCyeYI6wc5ZoQueXHRL//jUA/+ClCmhaqriJFnsBS7flLerPLfHOSgs4gBW86hJDaR2s7JhPHRwm4am/krVJ6f6mkMhsEK+wDc7nKCu9denJ9PqHLhUrcYRMPGkmbQx85YKKnZ1wlDf9ot2hJCs/4p8g0Bwhn2f1akbEcu8m0mveAxQNrOyJ7scbv8ZjzmMqT1AkPJssxZpQKdGZhtAJZQvqHdc4HImwZOiZwH4cskNrvpiO1Q/kdoj9xqPiDNL1O1AKN8VJVB8sJrmIY7rb6T9QL71xep1H4wCeZuj9+d6+UGncmY3XOglSjrqrzJnWM032Cx3aRsY71qKPcIagjBGugtukCB2IT+Gr0a/z3O+XI9uidU8Ql43MdMecrY1H24P8uOQ5qSddFrJGI9CxGq6ebxhr3Lu6KdSb24Lg6dHYIU+31ucRBOkYuenviWHVOuKtYluiSf/pnwvgBZO9/+1CKsrE2vINxoQrYOc0JaQx9CIHxP8JR80PLLa3yfkeGV/A3fxYP9MBKkyyhlbhU2PDtBIoKvXOGMjlP2x5F1hgz4QjoBmJci5RqbpzeOmdokKxgU1Ump44/BCUv5Xg58=
-  file: "${TRAVIS_BUILD_DIR}/amp_device_stub"
+  file: "${TRAVIS_BUILD_DIR}/install/amp_device_stub"
   skip_cleanup: true
   on:
     repo: nabto/appmyproduct-device-stub
