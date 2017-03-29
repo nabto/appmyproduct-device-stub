@@ -95,7 +95,14 @@ void demo_application_tick() {
     }
 #else
     static size_t ticks_ = 0;
-    heatpump_room_temperature_ = heatpump_target_temperature_ + ticks_++ % 3 - 1;
+    if ((ticks_ % 200) == 0) {
+        if (heatpump_room_temperature_ < heatpump_target_temperature_) {
+	    heatpump_room_temperature_++;
+        } else if (heatpump_room_temperature_ > heatpump_target_temperature_) {
+	    heatpump_room_temperature_--;
+        }
+    }
+    ticks_++;
 #endif
 }
 
