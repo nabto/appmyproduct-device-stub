@@ -94,8 +94,8 @@ void demo_application_tick() {
         time_last_update_ = now;
     }
 #else
-    size_t ticks_ = 0;
-    heatpump_room_temperature_ = heatpump_target_temperature_ + ticks++ % 2;
+    static size_t ticks_ = 0;
+    heatpump_room_temperature_ = heatpump_target_temperature_ + ticks_++ % 3 - 1;
 #endif
 }
 

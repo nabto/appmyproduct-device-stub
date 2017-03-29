@@ -1,6 +1,10 @@
 /**
  *  Implementation of main for uNabto SDK
  */
+#if defined(WIN32) || defined(WINCE)
+#include <windows.h>
+//#include <winsock2.h>
+#endif
 
 #include <sys/types.h>
 #include <modules/cli/gopt/gopt.h> // http://www.purposeful.co.uk/software/gopt/
@@ -9,6 +13,10 @@
 #include "unabto/unabto_common_main.h"
 #include "unabto/unabto_logging.h"
 #include "demo_application.h"
+
+#if defined(WIN32)
+#define strdup(s) _strdup(s)
+#endif
 
 struct configuration {
     const char *device_id;
@@ -144,5 +152,8 @@ void nabto_yield(int msec)
 #endif
 }
 
-
+#ifdef WIN32
+void setTimeFromGSP(uint32_t stamp){
+}
+#endif
     
