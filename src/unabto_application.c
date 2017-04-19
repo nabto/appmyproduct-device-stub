@@ -32,7 +32,6 @@ struct fp_mem_persistence fp_file_;
 
 void debug_dump_acl() {
     void* it = db_.first();
-    uint32_t offset = 0;
     while (it != NULL) {
         struct fp_acl_user user;
         fp_acl_db_status res = db_.load(it, &user);
@@ -152,7 +151,7 @@ application_event_result application_event(application_request* request,
     // https://github.com/nabto/ionic-starter-nabto/blob/master/www/nabto/unabto_queries.xml
 
     application_event_result res;
-    
+
     switch (request->queryId) {
     case 10000:
         // get_public_device_info.json
@@ -162,7 +161,6 @@ application_event_result application_event(application_request* request,
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_user_paired(request))) return AER_REQ_RSP_TOO_LARGE; 
         if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
-
         return AER_REQ_RESPONSE_READY;
 
     case 10010:
