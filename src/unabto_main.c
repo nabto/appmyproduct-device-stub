@@ -6,6 +6,10 @@
 //#include <winsock2.h>
 #endif
 
+#if !defined(WIN32) && !defined(__MACH__)
+#include <sched.h>
+#endif
+
 #include <sys/types.h>
 #include <modules/cli/gopt/gopt.h> // http://www.purposeful.co.uk/software/gopt/
 #include <modules/util/read_hex.h>
