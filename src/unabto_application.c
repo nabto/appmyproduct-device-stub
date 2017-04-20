@@ -30,6 +30,33 @@ struct fp_mem_persistence fp_file_;
 #define REQUIRES_GUEST FP_ACL_PERMISSION_NONE
 #define REQUIRES_OWNER FP_ACL_PERMISSION_ADMIN
 
+#define LED0_PATH "/sys/class/leds/led0/"
+
+void writeFile(const char* file, const char* value) {
+    FILE* fout = fopen(file, "w");
+    if(fout) {
+        fprintf(fout, value);
+        fclose(fout);
+    }
+}
+
+void updateLed() {
+#if !defined(WIN32) && !defined(__MACH__)
+    // Blink LED0 to reflect target temperature and heat pump state
+    // (Primary intended for Raspberry Pi)
+    if(heatpump_state_) {
+        unsigned int delay_off = 100 + (30 - heatpump_target_temperature_) * 50;
+        char delay_off_str[5];
+        sprintf(delay_off_str, "%u", delay_off);
+        writeFile(LED0_PATH "trigger", "timer");
+        writeFile(LED0_PATH "delay_on", "100");
+        writeFile(LED0_PATH "delay_off", delay_off_str);
+    } else {
+        writeFile(LED0_PATH "brightness", "0");
+    }
+#endif
+}
+
 void debug_dump_acl() {
     void* it = db_.first();
     while (it != NULL) {
@@ -66,6 +93,7 @@ void demo_init() {
     fp_mem_init(&db_, &default_settings, &fp_file_);
     fp_acl_ae_init(&db_);
     snprintf(device_name_, sizeof(device_name_), DEVICE_NAME_DEFAULT);
+    updateLed();
 }
 
 void demo_application_set_device_name(char* name) {
@@ -221,6 +249,7 @@ application_event_result application_event(application_request* request,
         if (!unabto_query_read_uint8(query_request, &heatpump_state_)) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
         NABTO_LOG_INFO(("Got (and returned) state %d", heatpump_state_));
+        updateLed();
         return AER_REQ_RESPONSE_READY;
 
     case 20020:
@@ -228,6 +257,7 @@ application_event_result application_event(application_request* request,
         if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
         if (!unabto_query_read_uint32(query_request, (uint32_t*)(&heatpump_target_temperature_))) return AER_REQ_TOO_SMALL;
         if (!unabto_query_write_uint32(query_response, (uint32_t)heatpump_target_temperature_)) return AER_REQ_RSP_TOO_LARGE;
+        updateLed();
         return AER_REQ_RESPONSE_READY;
 
     case 20030:
