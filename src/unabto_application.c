@@ -35,7 +35,7 @@ struct fp_mem_persistence fp_file_;
 void writeFile(const char* file, const char* value) {
     FILE* fout = fopen(file, "w");
     if(fout) {
-        fprintf(fout, value);
+        fprintf(fout, "%s", value);
         fclose(fout);
     }
 }
@@ -229,6 +229,10 @@ application_event_result application_event(application_request* request,
     case 11060:
         // set_user_name.json
         return fp_acl_ae_user_set_name(request, query_request, query_response); // implied admin priv check
+
+    case 11065:
+        // add_user.json
+        return fp_acl_ae_user_add(request, query_request, query_response); // implied admin priv check
 
     case 11070:
         // remove_user.json
