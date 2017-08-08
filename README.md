@@ -1,4 +1,4 @@
-# AppMyProduct device stub - 1.0 BETA
+# AppMyProduct device stub [![Build Status](https://travis-ci.org/nabto/appmyproduct-device-stub.svg?branch=master)](https://travis-ci.org/nabto/appmyproduct-device-stub)
 
 General [AppMyProduct](https://www.appmyproduct.com) device stub
 application to enable testing of AMP sample apps and to use as basis
