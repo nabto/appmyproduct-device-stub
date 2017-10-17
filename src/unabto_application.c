@@ -22,7 +22,7 @@ static uint32_t heatpump_mode_ = HPM_HEAT;
 #define MAX_DEVICE_NAME_LENGTH 50
 static char device_name_[MAX_DEVICE_NAME_LENGTH];
 static const char* device_product_ = "ACME 9002 Heatpump";
-static const char* device_icon_ = "img/chip-small.png";
+static const char* device_icon_ = "chip-small.png";
 
 static struct fp_acl_db db_;
 struct fp_mem_persistence fp_file_;
@@ -35,7 +35,7 @@ struct fp_mem_persistence fp_file_;
 void writeFile(const char* file, const char* value) {
     FILE* fout = fopen(file, "w");
     if(fout) {
-        fprintf(fout, value);
+        fprintf(fout, "%s", value);
         fclose(fout);
     }
 }
@@ -164,7 +164,7 @@ bool allow_client_access(nabto_connect* connection) {
     bool allow = fp_acl_is_connection_allowed(connection) || local;
     NABTO_LOG_INFO(("Allowing %s connect request: %s", (local ? "local" : "remote"), (allow ? "yes" : "no")));
     debug_dump_acl();
-    return allow;    
+    return allow;
 }
 
 application_event_result application_event(application_request* request,
