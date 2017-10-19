@@ -184,6 +184,13 @@ application_event_result application_event(application_request* request,
     application_event_result res;
 
     switch (request->queryId) {
+    case 0:
+        // get_interface_info.json
+        if (!write_string(query_response, device_interface_id_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint16(query_response, device_interface_version_major_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint16(query_response, device_interface_version_minor_)) return AER_REQ_RSP_TOO_LARGE;
+        return AER_REQ_RESPONSE_READY;
+
     case 10000:
         // get_public_device_info.json
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
@@ -192,9 +199,6 @@ application_event_result application_event(application_request* request,
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_user_paired(request))) return AER_REQ_RSP_TOO_LARGE; 
         if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
-        if (!write_string(query_response, device_interface_id_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint16(query_response, device_interface_version_major_)) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint16(query_response, device_interface_version_minor_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
     case 10010:
