@@ -76,9 +76,11 @@ void debug_dump_acl() {
 
 void demo_init() {
     struct fp_acl_settings default_settings;
+    NABTO_LOG_WARN(("WARNING: Remote access to the device is turned on by default. Please read TEN36 \"Security in Nabto Solutions\" to understand the security implications."));
     default_settings.systemPermissions =
         FP_ACL_SYSTEM_PERMISSION_PAIRING |
-        FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS;
+        FP_ACL_SYSTEM_PERMISSION_LOCAL_ACCESS |
+        FP_ACL_SYSTEM_PERMISSION_REMOTE_ACCESS;
     default_settings.defaultUserPermissions =
         FP_ACL_PERMISSION_LOCAL_ACCESS;
     default_settings.firstUserPermissions =
