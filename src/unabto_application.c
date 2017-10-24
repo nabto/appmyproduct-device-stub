@@ -23,6 +23,9 @@ static uint32_t heatpump_mode_ = HPM_HEAT;
 static char device_name_[MAX_DEVICE_NAME_LENGTH];
 static const char* device_product_ = "ACME 9002 Heatpump";
 static const char* device_icon_ = "chip-small.png";
+static const char* device_interface_id_ = "317aadf2-3137-474b-8ddb-fea437c424f4";
+static uint16_t device_interface_version_major_ = 1;
+static uint16_t device_interface_version_minor_ = 0;
 
 static struct fp_acl_db db_;
 struct fp_mem_persistence fp_file_;
@@ -181,6 +184,13 @@ application_event_result application_event(application_request* request,
     application_event_result res;
 
     switch (request->queryId) {
+    case 0:
+        // get_interface_info.json
+        if (!write_string(query_response, device_interface_id_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint16(query_response, device_interface_version_major_)) return AER_REQ_RSP_TOO_LARGE;
+        if (!unabto_query_write_uint16(query_response, device_interface_version_minor_)) return AER_REQ_RSP_TOO_LARGE;
+        return AER_REQ_RESPONSE_READY;
+
     case 10000:
         // get_public_device_info.json
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
