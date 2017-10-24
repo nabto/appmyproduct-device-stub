@@ -22,7 +22,7 @@ static uint32_t heatpump_mode_ = HPM_HEAT;
 #define MAX_DEVICE_NAME_LENGTH 50
 static char device_name_[MAX_DEVICE_NAME_LENGTH];
 static const char* device_product_ = "ACME 9002 Heatpump";
-static const char* device_icon_ = "chip-small.png";
+static const char* device_icon_ = "img/chip-small.png";
 static const char* device_interface_id_ = "317aadf2-3137-474b-8ddb-fea437c424f4";
 static uint16_t device_interface_version_major_ = 1;
 static uint16_t device_interface_version_minor_ = 0;
