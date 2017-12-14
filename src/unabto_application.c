@@ -215,6 +215,50 @@ application_event_result application_event(application_request* request,
         // get_users.json
         return fp_acl_ae_users_get(request, query_request, query_response); // implied admin priv check
         
+    case 11001:
+        // add_user.json
+        ;
+        NABTO_LOG_INFO(("add_user.json called"));
+
+        if (!fp_acl_is_request_allowed(request, FP_ACL_PERMISSION_ADMIN)) {
+            return AER_REQ_NO_ACCESS;
+        }
+
+        struct fp_acl_user user;
+        uint16_t length;
+        uint8_t* list;
+        // copy the name
+        if (!unabto_query_read_uint8_list(query_request, &list ,&length)) {
+            return AER_REQ_TOO_LARGE;
+        }
+        memset(user.name, 0, FP_ACL_USERNAME_MAX_LENGTH);
+        memcpy(user.name, list, length);
+
+        // copy the fingerprint
+        if (!unabto_query_read_uint8_list(query_request, &list, &length)) {
+            return AER_REQ_TOO_LARGE;
+        }
+        memcpy(user.fp, list, FP_ACL_FP_LENGTH);
+
+        struct fp_acl_settings aclSettings;
+        if (db_.load_settings(&aclSettings) != FP_ACL_DB_OK) {
+            return AER_REQ_SYSTEM_ERROR;
+        }
+        user.permissions = aclSettings.defaultUserPermissions;
+
+        fp_acl_db_status status = db_.save(&user);
+
+        if (status == FP_ACL_DB_OK) {
+            NABTO_LOG_INFO(("Successfuly added user %s with fp %s", user.name, user.fp));
+            if (!write_string(query_response, "OK")) {
+                return AER_REQ_RSP_TOO_LARGE;
+            }
+        }
+        else {
+            return AER_REQ_OUT_OF_RESOURCES;
+        }
+        return AER_REQ_RESPONSE_READY;
+
     case 11010: 
         // pair_with_device.json
         if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
