@@ -14,7 +14,7 @@ before_script:
 script:
 - mkdir cibuild
 - cd cibuild
-- cmake -D CMAKE_INSTALL_PREFIX=`pwd`/../install ../
+- cmake -D UNABTO_RANDOM_MODULE=libtomcrypt -D UNABTO_CRYPTO_MODULE=libtomcrypt -D CMAKE_INSTALL_PREFIX=`pwd`/../install ../
 - make install VERBOSE=1
 - cp ../install/bin/amp_device_stub ../install/bin/amp_device_stub_${TRAVIS_OS_NAME}
 deploy:
