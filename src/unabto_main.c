@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <modules/cli/gopt/gopt.h> // http://www.purposeful.co.uk/software/gopt/
 #include <modules/util/read_hex.h>
+#include <modules/log/dynamic/unabto_dynamic_log.h>
 #include "unabto/unabto_env_base.h"
 #include "unabto/unabto_common_main.h"
 #include "unabto/unabto_logging.h"
@@ -29,6 +30,7 @@ struct configuration {
     const char *device_name;
     const char *product_name;
     const char *icon_url;
+    const char *log;
 };
     
 void nabto_yield(int msec);
@@ -43,7 +45,12 @@ static void help(const char* errmsg, const char *progname)
     printf("\nAppMyProduct demo stub application to try the platform and example apps.\n");
     printf("Obtain a device id and crypto key from www.appmyproduct.com\n\n");
 
-    printf("Usage: %s -d <device id> -k <crypto key> [-N <demo display name>] [-P <product name>] [-I <icon url>] [-p <local/discovery port>]\n\n", progname);
+    printf("Usage: %s -d <device id> -k <crypto key> \n\t"
+           "[-N <demo display name>] \n\t"
+           "[-P <product name>] \n\t"
+           "[-I <icon url>] \n\t"
+           "[-p <local/discovery port>] \n\t"
+           "[-l <log pattern (e.g. *.trace)>]\n\n", progname);
 }
 
 
@@ -85,6 +92,14 @@ int main(int argc, char* argv[])
         demo_application_set_device_icon_(config.icon_url);
     }
 
+    if (config.log) {
+        if (!unabto_log_system_enable_stdout_pattern(config.log)) {            
+            NABTO_LOG_FATAL(("Logstring %s is not a valid logsetting", config.log));
+        }
+    } else {
+        unabto_log_system_enable_stdout_pattern("*.info");
+    }
+
     if (!unabto_init()) {
         NABTO_LOG_FATAL(("Failed at nabto_main_init"));
     }
@@ -111,6 +126,7 @@ bool parse_argv(int argc, char* argv[], struct configuration* config) {
     const char x4s[] = "N";      const char* x4l[] = { "devicename", 0 };
     const char x5s[] = "P";      const char* x5l[] = { "productname", 0 };
     const char x6s[] = "I";      const char* x6l[] = { "iconurl", 0 };
+    const char x7s[] = "l";      const char* x7l[] = { "log", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { 'h', 0,           x0s, x0l },
@@ -120,6 +136,7 @@ bool parse_argv(int argc, char* argv[], struct configuration* config) {
         { 'N', GOPT_ARG,    x4s, x4l },
         { 'P', GOPT_ARG,    x5s, x5l },
         { 'I', GOPT_ARG,    x6s, x6l },
+        { 'l', GOPT_ARG,    x7s, x7l },
         { 0, 0, 0, 0 }
     };
     void *options = gopt_sort( & argc, (const char**)argv, opts);
@@ -141,6 +158,7 @@ bool parse_argv(int argc, char* argv[], struct configuration* config) {
     gopt_arg(options, 'N', &config->device_name);
     gopt_arg(options, 'P', &config->product_name);
     gopt_arg(options, 'I', &config->icon_url);
+    gopt_arg(options, 'l', &config->log);
 
     return true;
 }

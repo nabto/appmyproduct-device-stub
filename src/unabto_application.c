@@ -62,18 +62,23 @@ void updateLed() {
 
 void debug_dump_acl() {
     void* it = db_.first();
-    while (it != NULL) {
-        struct fp_acl_user user;
-        fp_acl_db_status res = db_.load(it, &user);
-        if (res != FP_ACL_DB_OK) {
-            NABTO_LOG_WARN(("ACL error %d\n", res));
-            return;
+    if (!it) {
+        NABTO_LOG_INFO(("ACL is empty (no paired users)"));
+    } else {
+        NABTO_LOG_INFO(("ACL entries:"));
+        while (it != NULL) {
+            struct fp_acl_user user;
+            fp_acl_db_status res = db_.load(it, &user);
+            if (res != FP_ACL_DB_OK) {
+                NABTO_LOG_WARN(("ACL error %d\n", res));
+                return;
+            }
+            NABTO_LOG_INFO((" - %s [%02x:%02x:%02x:%02x:...]: %04x",
+                            user.name,
+                            user.fp[0], user.fp[1], user.fp[2], user.fp[3],
+                            user.permissions));
+            it = db_.next(it);
         }
-        NABTO_LOG_INFO(("%s [%02x:%02x:%02x:%02x:...]: %04x",
-                        user.name,
-                        user.fp[0], user.fp[1], user.fp[2], user.fp[3],
-                        user.permissions));
-        it = db_.next(it);
     }
 }
 
@@ -99,6 +104,7 @@ void demo_init() {
     fp_acl_ae_init(&db_);
     snprintf(device_name_, sizeof(device_name_), DEVICE_NAME_DEFAULT);
     updateLed();
+    debug_dump_acl();
 }
 
 void demo_application_set_device_name(char* name) {
@@ -185,6 +191,14 @@ application_event_result application_event(application_request* request,
 
     application_event_result res;
 
+    if (request->queryId >= 11000 && request->queryId < 12000) {
+        // default PPKA access control (see unabto/src/modules/fingerprint_acl/fp_acl_ae.c)
+        application_event_result res = fp_acl_ae_dispatch(11000, request, query_request, query_response);
+        NABTO_LOG_INFO(("ACL request [%d] handled with status %d", request->queryId, res));
+        debug_dump_acl();
+        return res;
+    }
+    
     switch (request->queryId) {
     case 0:
         // get_interface_info.json
@@ -210,41 +224,6 @@ application_event_result application_event(application_request* request,
         if (res != AER_REQ_RESPONSE_READY) return res;
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
-
-    case 11000:
-        // get_users.json
-        return fp_acl_ae_users_get(request, query_request, query_response); // implied admin priv check
-        
-    case 11010: 
-        // pair_with_device.json
-        if (!fp_acl_is_pair_allowed(request)) return AER_REQ_NO_ACCESS;
-        res = fp_acl_ae_pair_with_device(request, query_request, query_response); 
-        debug_dump_acl();
-        return res;
-
-    case 11020:
-        // get_current_user.json
-        return fp_acl_ae_user_me(request, query_request, query_response); 
-
-    case 11030:
-        // get_system_security_settings.json
-        return fp_acl_ae_system_get_acl_settings(request, query_request, query_response); // implied admin priv check
-
-    case 11040:
-        // set_system_security_settings.json
-        return fp_acl_ae_system_set_acl_settings(request, query_request, query_response); // implied admin priv check
-
-    case 11050:
-        // set_user_permissions.json
-        return fp_acl_ae_user_set_permissions(request, query_request, query_response); // implied admin priv check
-
-    case 11060:
-        // set_user_name.json
-        return fp_acl_ae_user_set_name(request, query_request, query_response); // implied admin priv check
-
-    case 11070:
-        // remove_user.json
-        return fp_acl_ae_user_remove(request, query_request, query_response); // implied admin priv check
 
     case 20000: 
         // heatpump_get_full_state.json
