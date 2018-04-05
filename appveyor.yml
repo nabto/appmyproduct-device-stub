@@ -1,0 +1,26 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+build_script:
+- cmd: >-
+    mkdir builddir || exit 1
+    
+    cd builddir || exit 1
+    
+    cmake .. || exit 1
+    
+    cmake --build . || exit 1
+    
+artifacts:
+- path: builddir\amp_device_stub.exe
+  name: amp_device_stub
+deploy:
+  description: ''
+  provider: GitHub
+  auth_token:
+    secure: /ZS7w9J1/2S5ise/ZkEA/aig3ASgfNwS6uiPCMHlg4s6AH1+RPF0UY1FcP784Gyv
+  artifact: /amp_device_stub.exe/
+  draft: false
+  prerelease: false
+  force_update: true
+  on:
+    appveyor_repo_tag: true
