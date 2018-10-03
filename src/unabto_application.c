@@ -3,6 +3,7 @@
  */
 
 #include "unabto/unabto_app.h"
+#include "unabto/unabto_types.h"
 #include <stdio.h>
 #include <modules/fingerprint_acl/fp_acl_ae.h>
 #include <modules/fingerprint_acl/fp_acl_memory.h>
@@ -29,6 +30,14 @@ static uint16_t device_interface_version_minor_ = 0;
 
 static struct fp_acl_db db_;
 struct fp_mem_persistence fp_file_;
+
+uint8_t demo_local_psk_id_[] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+uint8_t demo_local_psk_value_[] = {
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+};
 
 #define REQUIRES_GUEST FP_ACL_PERMISSION_NONE
 #define REQUIRES_OWNER FP_ACL_PERMISSION_ADMIN
@@ -73,10 +82,12 @@ void debug_dump_acl() {
                 NABTO_LOG_WARN(("ACL error %d\n", res));
                 return;
             }
-            NABTO_LOG_INFO((" - %s [%02x:%02x:%02x:%02x:...]: %04x",
-                            user.name,
-                            user.fp[0], user.fp[1], user.fp[2], user.fp[3],
-                            user.permissions));
+            if (user.fp.hasValue) {
+                NABTO_LOG_INFO((" - %s [%02x:%02x:%02x:%02x:...]: %04x",
+                                user.name,
+                                user.fp.value.data[0], user.fp.value.data[1], user.fp.value.data[2], user.fp.value.data[3],
+                                user.permissions));
+            }
             it = db_.next(it);
         }
     }
@@ -263,3 +274,18 @@ application_event_result application_event(application_request* request,
         return AER_REQ_INV_QUERY_ID;
     }
 }
+
+#if NABTO_ENABLE_LOCAL_PSK_CONNECTION
+bool unabto_local_psk_connection_get_key(const struct unabto_psk_id* keyId, const char* clientId, const struct unabto_optional_fingerprint* pkFp, struct unabto_psk* key) {
+    if (memcmp(keyId, demo_local_psk_id_, PSK_ID_LENGTH) == 0) {
+        memcpy(&key->data, demo_local_psk_value_, PSK_LENGTH);
+        printf("hello ok\n");
+        return true;
+    } else {
+        NABTO_LOG_WARN(("Key [%02x:%02x:%02x:...] is not known",
+                        keyId->data[0], keyId->data[1], keyId->data[2]));
+        printf("hello nok\n");
+        return false;
+    }
+}
+#endif
