@@ -50,7 +50,7 @@ void writeFile(const char* file, const char* value) {
         fprintf(fout, "%s", value);
         fclose(fout);
     } else {
-        NABTO_LOG_INFO(("Attempt to change Raspberry Pi LED status to %s failed - are you on an RPI and do you have write permission to %s", value, LED0_PATH));
+        NABTO_LOG_INFO(("Attempt to change Raspberry Pi LED status to %s failed - are you on an RPI and do you have write permission to %s?", value, LED0_PATH));
     }
 }
 
