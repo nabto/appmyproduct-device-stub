@@ -8,7 +8,7 @@
 #define NABTO_ENABLE_STREAM                         0
 #define NABTO_CONNECTIONS_SIZE                      500
 #define NABTO_ENABLE_UCRYPTO                        1
-#define NABTO_ENABLE_LOCAL_PSK_CONNECTION           1
+#define NABTO_ENABLE_LOCAL_PSK_CONNECTION           0
 #define NABTO_ENABLE_LOGGING                        1
 
 #ifdef LOG_ALL
