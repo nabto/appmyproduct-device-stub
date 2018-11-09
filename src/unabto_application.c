@@ -46,16 +46,17 @@ uint8_t demo_local_psk_value_[] = {
 
 void writeFile(const char* file, const char* value) {
     FILE* fout = fopen(file, "w");
-    if(fout) {
+    if (fout) {
         fprintf(fout, "%s", value);
         fclose(fout);
+    } else {
+        NABTO_LOG_INFO(("Attempt to change Raspberry Pi LED status to %s failed - are you on an RPI and do you have write permission to %s?", value, LED0_PATH));
     }
 }
 
 void updateLed() {
-#if !defined(WIN32) && !defined(__MACH__)
-    // Blink LED0 to reflect target temperature and heat pump state
-    // (Primary intended for Raspberry Pi)
+#if !defined(WIN32) && !defined(__MACH__) // TODO ... use some RPI specific guard
+    // Blink rpi LED0 to reflect target temperature and heat pump state
     if(heatpump_state_) {
         unsigned int delay_off = 100 + (30 - heatpump_target_temperature_) * 50;
         char delay_off_str[5];
