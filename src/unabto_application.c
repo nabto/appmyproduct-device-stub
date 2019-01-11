@@ -280,12 +280,10 @@ application_event_result application_event(application_request* request,
 bool unabto_local_psk_connection_get_key(const struct unabto_psk_id* keyId, const char* clientId, const struct unabto_optional_fingerprint* pkFp, struct unabto_psk* key) {
     if (memcmp(keyId, demo_local_psk_id_, PSK_ID_LENGTH) == 0) {
         memcpy(&key->data, demo_local_psk_value_, PSK_LENGTH);
-        printf("hello ok\n");
         return true;
     } else {
         NABTO_LOG_WARN(("Key [%02x:%02x:%02x:...] is not known",
                         keyId->data[0], keyId->data[1], keyId->data[2]));
-        printf("hello nok\n");
         return false;
     }
 }
