@@ -32,7 +32,7 @@ struct configuration {
     const char *icon_url;
     const char *log;
 };
-    
+
 void nabto_yield(int msec);
 static void help(const char* errmsg, const char *progname);
 bool parse_argv(int argc, char* argv[], struct configuration* config);
@@ -75,11 +75,26 @@ int main(int argc, char* argv[])
         help("Invalid cryptographic key specified", argv[0]);
         return false;
     }
-  
+
     if (config.local_port_str) {
         nms->localPort = atoi(config.local_port_str);
     }
 
+    if (config.log) {
+        if (!unabto_log_system_enable_stdout_pattern(config.log)) {
+            NABTO_LOG_FATAL(("Logstring %s is not a valid logsetting", config.log));
+        }
+    } else {
+        unabto_log_system_enable_stdout_pattern("*.info");
+    }
+
+    if (!unabto_init()) {
+        NABTO_LOG_FATAL(("Failed at nabto_main_init"));
+    }
+
+    demo_init();
+
+    // override defaults
     if (config.device_name) {
         demo_application_set_device_name(config.device_name);
     }
@@ -92,19 +107,6 @@ int main(int argc, char* argv[])
         demo_application_set_device_icon_(config.icon_url);
     }
 
-    if (config.log) {
-        if (!unabto_log_system_enable_stdout_pattern(config.log)) {            
-            NABTO_LOG_FATAL(("Logstring %s is not a valid logsetting", config.log));
-        }
-    } else {
-        unabto_log_system_enable_stdout_pattern("*.info");
-    }
-
-    if (!unabto_init()) {
-        NABTO_LOG_FATAL(("Failed at nabto_main_init"));
-    }
-
-    demo_init();
 
     NABTO_LOG_INFO(("AppMyProduct demo stub [%s] running!", nms->id));
 
@@ -178,4 +180,3 @@ void nabto_yield(int msec)
 void setTimeFromGSP(uint32_t stamp){
 }
 #endif
-    

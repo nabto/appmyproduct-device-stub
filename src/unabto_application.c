@@ -210,7 +210,7 @@ application_event_result application_event(application_request* request,
         debug_dump_acl();
         return res;
     }
-    
+
     switch (request->queryId) {
     case 0:
         // get_interface_info.json
@@ -225,7 +225,7 @@ application_event_result application_event(application_request* request,
         if (!write_string(query_response, device_product_)) return AER_REQ_RSP_TOO_LARGE;
         if (!write_string(query_response, device_icon_)) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_pair_allowed(request))) return AER_REQ_RSP_TOO_LARGE;
-        if (!unabto_query_write_uint8(query_response, fp_acl_is_user_paired(request))) return AER_REQ_RSP_TOO_LARGE; 
+        if (!unabto_query_write_uint8(query_response, fp_acl_is_user_paired(request))) return AER_REQ_RSP_TOO_LARGE;
         if (!unabto_query_write_uint8(query_response, fp_acl_is_user_owner(request))) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
@@ -237,7 +237,7 @@ application_event_result application_event(application_request* request,
         if (!write_string(query_response, device_name_)) return AER_REQ_RSP_TOO_LARGE;
         return AER_REQ_RESPONSE_READY;
 
-    case 20000: 
+    case 20000:
         // heatpump_get_full_state.json
         if (!fp_acl_is_request_allowed(request, REQUIRES_GUEST)) return AER_REQ_NO_ACCESS;
         if (!unabto_query_write_uint8(query_response, heatpump_state_)) return AER_REQ_RSP_TOO_LARGE;
